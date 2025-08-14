@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21513" systemVersion="22A380" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="ShiftEntity" representedClassName="ShiftEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="actualBreakMinutes" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="breakMinutes" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="endTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isConfirmed" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isRecurring" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="memo" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="recurringEndDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="recurringType" optional="YES" attributeType="String"/>
+        <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="workplaceId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="workplace" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="WorkplaceEntity" inverseName="shifts" inverseEntity="WorkplaceEntity"/>
+    </entity>
+    <entity name="WorkplaceEntity" representedClassName="WorkplaceEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="colorHex" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="holidayRate" optional="YES" attributeType="Double" defaultValueString="1.0" usesScalarValueType="YES"/>
+        <attribute name="hourlyWage" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="nightShiftRate" optional="YES" attributeType="Double" defaultValueString="1.0" usesScalarValueType="YES"/>
+        <attribute name="priority" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="transportationAllowance" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="travelTimeMinutes" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="shifts" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ShiftEntity" inverseName="workplace" inverseEntity="ShiftEntity"/>
+    </entity>
+</model>
