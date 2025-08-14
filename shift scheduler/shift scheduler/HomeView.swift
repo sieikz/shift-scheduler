@@ -53,7 +53,7 @@ struct HomeView: View {
                 shiftViewModel.fetchShifts()
                 workplaceViewModel.fetchWorkplaces()
             }
-            .navigationTitle("ホーム")
+            .navigationTitle("")
             .sheet(isPresented: $showingAddShift) {
                 if !workplaceViewModel.workplaces.isEmpty {
                     AddShiftView(

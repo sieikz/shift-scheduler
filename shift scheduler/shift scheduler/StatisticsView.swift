@@ -37,7 +37,7 @@ struct StatisticsView: View {
                 shiftViewModel.fetchShifts()
                 workplaceViewModel.fetchWorkplaces()
             }
-            .navigationTitle("統計")
+            .navigationTitle("")
         }
         .onChange(of: selectedTimeRange) {
             updateStats()
