@@ -12,6 +12,7 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var sharedAppState = SharedAppState()
     @StateObject private var workplaceViewModel = WorkplaceViewModel()
+    @StateObject private var shiftViewModel = ShiftViewModel()
     @State private var selectedTab = 0
     
     var body: some View {
@@ -28,16 +29,21 @@ struct ContentView: View {
                     VStack(spacing: 0) {
                         CalendarView()
                             .environmentObject(sharedAppState)
-                            .frame(height: geometry.size.height * 0.65) // カレンダーを画面の65%に制限
+                            .frame(height: geometry.size.height * 0.55) // カレンダーを画面の55%に制限してボタンの重複を回避
                         
                         // 常時表示のシフト情報エリア - 残りのスペースを使用
                         if selectedTab == 1 {
                             ShiftInfoDisplay(
                                 selectedDate: sharedAppState.selectedDate,
                                 shifts: sharedAppState.selectedDateShifts,
-                                workplaces: workplaceViewModel.workplaces
+                                workplaces: workplaceViewModel.workplaces,
+                                onTodayTapped: {
+                                    let today = Date()
+                                    let todayShifts = shiftViewModel.shifts(for: today)
+                                    sharedAppState.updateSelectedDate(today, shifts: todayShifts)
+                                }
                             )
-                            .frame(height: geometry.size.height * 0.35) // シフト情報を画面の35%に制限
+                            .frame(height: geometry.size.height * 0.45) // シフト情報を画面の45%に拡大
                             .background(Color(.systemGroupedBackground))
                         }
                     }

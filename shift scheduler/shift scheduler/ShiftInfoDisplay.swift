@@ -4,6 +4,11 @@ struct ShiftInfoDisplay: View {
     let selectedDate: Date?
     let shifts: [Shift]
     let workplaces: [Workplace]
+    let onTodayTapped: () -> Void
+    @StateObject private var shiftViewModel = ShiftViewModel()
+    @StateObject private var workplaceViewModel = WorkplaceViewModel()
+    @State private var showingAddShift = false
+    private let hapticFeedback = UIImpactFeedbackGenerator(style: .light)
     
     private var dateString: String {
         guard let date = selectedDate else { return "日付を選択してください" }
@@ -30,37 +35,79 @@ struct ShiftInfoDisplay: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header section
-            VStack(alignment: .leading, spacing: 8) {
-                Text(dateString)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
+            // Header section with buttons
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(dateString)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    if selectedDate == nil {
+                        Text("カレンダーから日付を選択してください")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    } else if shifts.isEmpty {
+                        HStack {
+                            Image(systemName: "moon.zzz")
+                                .font(.title3)
+                                .foregroundColor(.secondary)
+                            Text("お休み")
+                                .font(.title3)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        HStack {
+                            Image(systemName: "briefcase.fill")
+                                .font(.title3)
+                                .foregroundColor(.blue)
+                            Text("\(shifts.count)件のシフト・\(totalWorkingTime)時間")
+                                .font(.title3)
+                                .fontWeight(.medium)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
                 
-                if selectedDate == nil {
-                    Text("カレンダーから日付を選択してください")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                } else if shifts.isEmpty {
-                    HStack {
-                        Image(systemName: "moon.zzz")
-                            .font(.title3)
-                            .foregroundColor(.secondary)
-                        Text("お休み")
-                            .font(.title3)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
+                Spacer()
+                
+                HStack(spacing: 8) {
+                    // Today button
+                    Button {
+                        hapticFeedback.impactOccurred()
+                        onTodayTapped()
+                    } label: {
+                        Text("今日")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.blue)
+                                    .shadow(color: .blue.opacity(0.3), radius: 2, x: 0, y: 1)
+                            )
                     }
-                } else {
-                    HStack {
-                        Image(systemName: "briefcase.fill")
-                            .font(.title3)
-                            .foregroundColor(.blue)
-                        Text("\(shifts.count)件のシフト・\(totalWorkingTime)時間")
-                            .font(.title3)
-                            .fontWeight(.medium)
-                            .foregroundColor(.blue)
+                    
+                    // Add shift button
+                    Button {
+                        hapticFeedback.impactOccurred()
+                        showingAddShift = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20))
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(
+                                Circle()
+                                    .fill(workplaceViewModel.workplaces.isEmpty ? Color.gray : Color.blue)
+                                    .shadow(color: .blue.opacity(0.3), radius: 3, x: 0, y: 2)
+                            )
                     }
+                    .disabled(workplaceViewModel.workplaces.isEmpty)
                 }
             }
             .padding(.horizontal, 20)
@@ -87,6 +134,15 @@ struct ShiftInfoDisplay: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(.systemGroupedBackground))
+        .sheet(isPresented: $showingAddShift) {
+            if let date = selectedDate {
+                AddShiftView(
+                    selectedDate: date,
+                    workplaces: workplaces,
+                    shiftViewModel: shiftViewModel
+                )
+            }
+        }
     }
 }
 
@@ -307,7 +363,8 @@ struct ShiftCompactCard: View {
     ShiftInfoDisplay(
         selectedDate: Date(),
         shifts: [sampleShift],
-        workplaces: [sampleWorkplace]
+        workplaces: [sampleWorkplace],
+        onTodayTapped: {}
     )
     .frame(height: 400)
 }

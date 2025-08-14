@@ -16,67 +16,15 @@ struct CalendarView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
-                VStack(spacing: 0) {
-                    // Month navigation
-                    monthNavigationHeader
-                    
-                    // Weekday headers
-                    weekdayHeaderView
-                    
-                    // Calendar grid
-                    calendarGridView(geometry: geometry)
-                }
+            VStack(spacing: 0) {
+                // Month navigation
+                monthNavigationHeader
                 
-                // Floating action buttons
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            // Today button
-                            Button {
-                                hapticFeedback.impactOccurred()
-                                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                                    selectedDate = Date()
-                                }
-                                // Update shared state for today's shifts
-                                let todayShifts = shiftViewModel.shifts(for: Date())
-                                sharedAppState.updateSelectedDate(Date(), shifts: todayShifts)
-                            } label: {
-                                Text("今日")
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        Capsule()
-                                            .fill(Color.blue)
-                                            .shadow(color: .blue.opacity(0.3), radius: 6, x: 0, y: 3)
-                                    )
-                            }
-                            
-                            // Add shift button
-                            Button {
-                                hapticFeedback.impactOccurred()
-                                showingAddShift = true
-                            } label: {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.system(size: 56))
-                                    .foregroundColor(workplaceViewModel.workplaces.isEmpty ? Color.gray : Color.blue)
-                                    .background(
-                                        Circle()
-                                            .fill(Color.white)
-                                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
-                                    )
-                            }
-                            .disabled(workplaceViewModel.workplaces.isEmpty)
-                        }
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 140) // 拡大されたシフト情報エリアを考慮
-                    }
-                }
+                // Weekday headers
+                weekdayHeaderView
+                
+                // Calendar grid
+                calendarGridView(geometry: geometry)
             }
         }
         .navigationTitle("カレンダー")
@@ -103,6 +51,10 @@ struct CalendarView: View {
             sharedAppState.updateSelectedDate(Date(), shifts: todayShifts)
         }
         .onChange(of: selectedDate) { _, newDate in
+            shiftViewModel.selectedDate = newDate
+        }
+        .onChange(of: sharedAppState.calendarSelectedDate) { _, newDate in
+            selectedDate = newDate
             shiftViewModel.selectedDate = newDate
         }
     }
