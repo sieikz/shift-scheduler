@@ -13,27 +13,33 @@ struct WorkplaceListView: View {
             ZStack {
                 if workplaceViewModel.workplaces.isEmpty {
                     // Empty state
-                    VStack(spacing: 20) {
+                    VStack(spacing: 24) {
                         Image(systemName: "building.2")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
+                            .font(.system(size: 64))
+                            .foregroundColor(.blue.opacity(0.6))
                         
-                        Text("職場が登録されていません")
-                            .font(.title2)
-                            .foregroundColor(.gray)
-                        
-                        Text("右上の＋ボタンから\n最初の職場を登録しましょう")
-                            .font(.body)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
+                        VStack(spacing: 8) {
+                            Text("職場が登録されていません")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            Text("最初の職場を追加してシフト管理を\n始めましょう")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
                         
                         Button("職場を追加") {
                             showingAddWorkplace = true
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
+                        .font(.headline)
                     }
-                    .padding()
+                    .padding(32)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGroupedBackground))
                 } else {
                     List {
                         ForEach(workplaceViewModel.workplaces) { workplace in
@@ -69,12 +75,16 @@ struct WorkplaceListView: View {
                 }
             }
             .sheet(isPresented: $showingAddWorkplace) {
-                AddWorkplaceView(workplaceViewModel: workplaceViewModel)
+                NavigationView {
+                    AddWorkplaceView(workplaceViewModel: workplaceViewModel)
+                }
             }
             .sheet(isPresented: $showingEditWorkplace) {
                 if let workplace = selectedWorkplace {
-                    EditWorkplaceView(workplace: workplace, workplaceViewModel: workplaceViewModel) {
-                        selectedWorkplace = nil
+                    NavigationView {
+                        EditWorkplaceView(workplace: workplace, workplaceViewModel: workplaceViewModel) {
+                            selectedWorkplace = nil
+                        }
                     }
                 }
             }
@@ -120,30 +130,33 @@ struct WorkplaceRowView: View {
     
     var body: some View {
         Button(action: onTap) {
-            HStack {
-                // 職場の色インジケーター
+            HStack(spacing: 16) {
                 Circle()
                     .fill(workplace.color)
-                    .frame(width: 20, height: 20)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
+                    .frame(width: 24, height: 24)
+                    .shadow(color: workplace.color.opacity(0.3), radius: 2)
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(workplace.name)
                         .font(.headline)
+                        .fontWeight(.semibold)
                         .foregroundColor(.primary)
                     
-                    HStack {
-                        Text("時給: ¥\(workplace.hourlyWage)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                    HStack(spacing: 12) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "yensign.circle")
+                            Text("¥\(Int(workplace.hourlyWage))")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                         
                         if workplace.transportationAllowance > 0 {
-                            Text("交通費: ¥\(workplace.transportationAllowance)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                            HStack(spacing: 4) {
+                                Image(systemName: "tram")
+                                Text("¥\(Int(workplace.transportationAllowance))")
+                            }
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                         }
                     }
                     
@@ -157,16 +170,14 @@ struct WorkplaceRowView: View {
                 
                 Spacer()
                 
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 4) {
                     if workplace.travelTimeMinutes > 0 {
-                        HStack {
+                        HStack(spacing: 4) {
                             Image(systemName: "car.fill")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
                             Text("\(workplace.travelTimeMinutes)分")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
                         }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     }
                     
                     Image(systemName: "chevron.right")
@@ -174,7 +185,7 @@ struct WorkplaceRowView: View {
                         .foregroundColor(.gray)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 8)
         }
         .buttonStyle(PlainButtonStyle())
     }

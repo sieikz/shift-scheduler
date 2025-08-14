@@ -29,7 +29,7 @@ struct ContentView: View {
                     VStack(spacing: 0) {
                         CalendarView()
                             .environmentObject(sharedAppState)
-                            .frame(height: geometry.size.height * 0.55) // カレンダーを画面の55%に制限してボタンの重複を回避
+                            .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.65) // カレンダーの高さを65%に拡大
                         
                         // 常時表示のシフト情報エリア - 残りのスペースを使用
                         if selectedTab == 1 {
@@ -43,7 +43,7 @@ struct ContentView: View {
                                     sharedAppState.updateSelectedDate(today, shifts: todayShifts)
                                 }
                             )
-                            .frame(height: geometry.size.height * 0.45) // シフト情報を画面の45%に拡大
+                            .frame(height: geometry.size.height * 0.35) // シフト情報を画面の35%に調整
                             .background(Color(.systemGroupedBackground))
                         }
                     }

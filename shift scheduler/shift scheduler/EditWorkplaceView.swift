@@ -46,34 +46,60 @@ struct EditWorkplaceView: View {
     }
     
     var body: some View {
-        NavigationView {
-            Form {
+        Form {
                 Section("基本情報") {
                     HStack {
                         Text("職場名")
                         TextField("例: カフェA", text: $name)
                             .multilineTextAlignment(.trailing)
                             .onChange(of: name) {
-                                checkForChanges()
+                                Task { @MainActor in
+                                    checkForChanges()
+                                }
                             }
                     }
                     
-                    HStack {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("色")
-                        Spacer()
-                        Button {
-                            showingColorPicker = true
-                        } label: {
-                            HStack {
-                                Circle()
-                                    .fill(selectedColor)
-                                    .frame(width: 24, height: 24)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                                Text("変更")
-                                    .foregroundColor(.blue)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        LazyHGrid(rows: [GridItem(.fixed(40))], spacing: 12) {
+                            ForEach(Workplace.colorOptions.indices, id: \.self) { index in
+                                let color = Workplace.colorOptions[index]
+                                let isSelected = selectedColor.toHex() == color.toHex()
+                                let isAvailable = workplaceViewModel.isColorAvailable(color, excluding: workplace.id)
+                                
+                                Button {
+                                    if isAvailable {
+                                        selectedColor = color
+                                    }
+                                } label: {
+                                    Circle()
+                                        .fill(color)
+                                        .frame(width: 36, height: 36)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(isSelected ? Color.primary : Color.clear, lineWidth: 3)
+                                        )
+                                        .overlay(
+                                            Group {
+                                                if isSelected {
+                                                    Image(systemName: "checkmark")
+                                                        .foregroundColor(.white)
+                                                        .font(.system(size: 14, weight: .bold))
+                                                } else if !isAvailable {
+                                                    Image(systemName: "xmark")
+                                                        .foregroundColor(.white.opacity(0.7))
+                                                        .font(.system(size: 12, weight: .bold))
+                                                }
+                                            }
+                                        )
+                                        .opacity(isAvailable ? 1.0 : 0.4)
+                                        .scaleEffect(isSelected ? 1.1 : 1.0)
+                                        .animation(.easeInOut(duration: 0.15), value: isSelected)
+                                }
+                                .disabled(!isAvailable)
                             }
                         }
                     }
@@ -84,7 +110,9 @@ struct EditWorkplaceView: View {
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .onChange(of: hourlyWage) {
-                                checkForChanges()
+                                Task { @MainActor in
+                                    checkForChanges()
+                                }
                             }
                         Text("円")
                             .foregroundColor(.secondary)
@@ -98,7 +126,9 @@ struct EditWorkplaceView: View {
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .onChange(of: transportationAllowance) {
-                                checkForChanges()
+                                Task { @MainActor in
+                                    checkForChanges()
+                                }
                             }
                         Text("円")
                             .foregroundColor(.secondary)
@@ -110,7 +140,9 @@ struct EditWorkplaceView: View {
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .onChange(of: travelTimeMinutes) {
-                                checkForChanges()
+                                Task { @MainActor in
+                                    checkForChanges()
+                                }
                             }
                         Text("分")
                             .foregroundColor(.secondary)
@@ -122,54 +154,13 @@ struct EditWorkplaceView: View {
                         TextField("例: 東京都渋谷区...", text: $address, axis: .vertical)
                             .lineLimit(2...4)
                             .onChange(of: address) {
-                                checkForChanges()
+                                Task { @MainActor in
+                                    checkForChanges()
+                                }
                             }
                     }
                 }
                 
-                Section("手当設定") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("深夜手当率")
-                            Spacer()
-                            Text("\(nightShiftRate, specifier: "%.2f")倍")
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Slider(value: $nightShiftRate, in: 1.0...2.0, step: 0.05) {
-                            Text("深夜手当率")
-                        }
-                        .accentColor(selectedColor)
-                        .onChange(of: nightShiftRate) {
-                            checkForChanges()
-                        }
-                        
-                        Text("22:00〜5:00の時間帯に適用")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("休日手当率")
-                            Spacer()
-                            Text("\(holidayRate, specifier: "%.2f")倍")
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Slider(value: $holidayRate, in: 1.0...2.0, step: 0.05) {
-                            Text("休日手当率")
-                        }
-                        .accentColor(selectedColor)
-                        .onChange(of: holidayRate) {
-                            checkForChanges()
-                        }
-                        
-                        Text("土日祝日に適用")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
                 
                 Section("作成日時") {
                     HStack {
@@ -205,25 +196,25 @@ struct EditWorkplaceView: View {
                     .disabled(!isFormValid || !hasChanges)
                 }
             }
-            .sheet(isPresented: $showingColorPicker) {
-                ColorPickerView(selectedColor: $selectedColor, 
-                              availableColors: Workplace.colorOptions,
-                              workplaceViewModel: workplaceViewModel)
-            }
             .onChange(of: selectedColor) {
-                checkForChanges()
-                updateErrorMessage()
+                Task { @MainActor in
+                    checkForChanges()
+                    updateErrorMessage()
+                }
             }
             .onChange(of: name) {
-                updateErrorMessage()
+                Task { @MainActor in
+                    updateErrorMessage()
+                }
             }
             .onChange(of: hourlyWage) {
-                updateErrorMessage()
+                Task { @MainActor in
+                    updateErrorMessage()
+                }
             }
             .onAppear {
                 updateErrorMessage()
             }
-        }
     }
     
     private func checkForChanges() {
