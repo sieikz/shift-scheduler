@@ -51,18 +51,20 @@ struct CalendarView: View {
             )
         }
         .onAppear {
-            shiftViewModel.selectedDate = selectedDate
-            // 初期状態として今日のシフトを表示
-            let todayShifts = shiftViewModel.shifts(for: Date())
-            sharedAppState.updateSelectedDate(Date(), shifts: todayShifts)
+            DispatchQueue.main.async {
+                shiftViewModel.selectedDate = selectedDate
+                // 初期状態として今日のシフトを表示
+                let todayShifts = shiftViewModel.shifts(for: Date())
+                sharedAppState.updateSelectedDate(Date(), shifts: todayShifts)
+            }
         }
         .onChange(of: selectedDate) { _, newDate in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 shiftViewModel.selectedDate = newDate
             }
         }
         .onChange(of: sharedAppState.calendarSelectedDate) { _, newDate in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 selectedDate = newDate
                 shiftViewModel.selectedDate = newDate
             }
@@ -417,8 +419,6 @@ struct DateShiftsView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var showingAddShift = false
-    @State private var showingEditShift = false
-    @State private var selectedShift: Shift?
     
     private var dateString: String {
         let formatter = DateFormatter()
@@ -451,10 +451,21 @@ struct DateShiftsView: View {
                 
                 Section {
                     ForEach(shifts.sorted { $0.startTime < $1.startTime }) { shift in
-                        ShiftRowView(shift: shift, workplace: workplaces.first { $0.id == shift.workplaceId }) {
-                            selectedShift = shift
-                            showingEditShift = true
+                        NavigationLink(destination: EditShiftView(
+                            shift: shift,
+                            workplaces: workplaces,
+                            shiftViewModel: shiftViewModel
+                        ) {
+                            // onDismiss - no action needed for navigation
+                        }) {
+                            ShiftRowView(
+                                shift: shift,
+                                workplace: workplaces.first { $0.id == shift.workplaceId },
+                                onTap: nil,
+                                onEdit: nil // NavigationLinkで処理するのでnil
+                            )
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
                     .onDelete(perform: deleteShifts)
                 }
@@ -483,17 +494,6 @@ struct DateShiftsView: View {
                     shiftViewModel: shiftViewModel
                 )
             }
-            .sheet(isPresented: $showingEditShift) {
-                if let shift = selectedShift {
-                    EditShiftView(
-                        shift: shift,
-                        workplaces: workplaces,
-                        shiftViewModel: shiftViewModel
-                    ) {
-                        selectedShift = nil
-                    }
-                }
-            }
         }
     }
     
@@ -509,7 +509,8 @@ struct DateShiftsView: View {
 struct ShiftRowView: View {
     let shift: Shift
     let workplace: Workplace?
-    let onTap: () -> Void
+    let onTap: (() -> Void)?
+    let onEdit: (() -> Void)?
     
     private var timeFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -528,64 +529,88 @@ struct ShiftRowView: View {
     }
     
     var body: some View {
-        Button(action: onTap) {
-            HStack {
-                Circle()
-                    .fill(workplace?.color ?? .gray)
-                    .frame(width: 12, height: 12)
+        let content = HStack {
+            Circle()
+                .fill(workplace?.color ?? .gray)
+                .frame(width: 12, height: 12)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(workplace?.name ?? "不明な職場")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(workplace?.name ?? "不明な職場")
-                        .font(.subheadline)
+                HStack {
+                    Text("\(timeFormatter.string(from: shift.startTime)) - \(timeFormatter.string(from: shift.endTime))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("(\(workingTime))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                if let memo = shift.memo, !memo.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "note.text")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(memo)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            VStack {
+                if shift.isNightShift {
+                    Image(systemName: "moon.fill")
+                        .font(.caption)
+                        .foregroundColor(.indigo)
+                }
+                
+                if shift.isHoliday() {
+                    Image(systemName: "star.fill")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                }
+            }
+            
+            if let onEdit = onEdit {
+                Button {
+                    onEdit()
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.caption)
                         .fontWeight(.medium)
-                    
-                    HStack {
-                        Text("\(timeFormatter.string(from: shift.startTime)) - \(timeFormatter.string(from: shift.endTime))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text("(\(workingTime))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    if let memo = shift.memo, !memo.isEmpty {
-                        HStack(spacing: 4) {
-                            Image(systemName: "note.text")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(memo)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                        }
-                    }
+                        .foregroundColor(.blue)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            Circle()
+                                .fill(Color.blue.opacity(0.1))
+                        )
                 }
-                
-                Spacer()
-                
-                VStack {
-                    if shift.isNightShift {
-                        Image(systemName: "moon.fill")
-                            .font(.caption)
-                            .foregroundColor(.indigo)
-                    }
-                    
-                    if shift.isHoliday() {
-                        Image(systemName: "star.fill")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                    }
-                }
-                
+                .buttonStyle(PlainButtonStyle())
+            } else {
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundColor(.gray)
             }
         }
-        .buttonStyle(PlainButtonStyle())
+        
+        if let onTap = onTap {
+            Button(action: onTap) {
+                content
+            }
+            .buttonStyle(PlainButtonStyle())
+        } else {
+            content
+        }
     }
 }
+
 
 #Preview {
     CalendarView()

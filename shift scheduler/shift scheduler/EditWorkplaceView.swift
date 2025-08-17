@@ -213,7 +213,9 @@ struct EditWorkplaceView: View {
                 }
             }
             .onAppear {
-                updateErrorMessage()
+                DispatchQueue.main.async {
+                    updateErrorMessage()
+                }
             }
     }
     

@@ -7,13 +7,17 @@ class SharedAppState: ObservableObject {
     @Published var calendarSelectedDate: Date = Date()
     
     func updateSelectedDate(_ date: Date, shifts: [Shift]) {
-        selectedDate = date
-        selectedDateShifts = shifts
-        calendarSelectedDate = date
+        DispatchQueue.main.async {
+            self.selectedDate = date
+            self.selectedDateShifts = shifts
+            self.calendarSelectedDate = date
+        }
     }
     
     func clearSelection() {
-        selectedDate = nil
-        selectedDateShifts = []
+        DispatchQueue.main.async {
+            self.selectedDate = nil
+            self.selectedDateShifts = []
+        }
     }
 }

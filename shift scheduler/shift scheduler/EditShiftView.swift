@@ -15,9 +15,6 @@ struct EditShiftView: View {
     let onDismiss: () -> Void
     @Environment(\.dismiss) private var dismiss
     
-    @State private var overlapWarnings: [ShiftOverlap] = []
-    @State private var errorMessage: String?
-    @State private var hasChanges = false
     
     init(shift: Shift, workplaces: [Workplace], shiftViewModel: ShiftViewModel, onDismiss: @escaping () -> Void) {
         self._shift = State(initialValue: shift)
@@ -35,19 +32,75 @@ struct EditShiftView: View {
         self._isConfirmed = State(initialValue: shift.isConfirmed)
     }
     
-    private var isFormValid: Bool {
-        let validation = shiftViewModel.validateShift(
+    private var overlapWarnings: [ShiftOverlap] {
+        shiftViewModel.wouldOverlap(
+            workplaceId: selectedWorkplaceId,
+            date: selectedDate,
+            startTime: startTime,
+            endTime: endTime,
+            workplaces: workplaces,
+            excluding: shift.id
+        )
+    }
+    
+    private var errorMessage: String? {
+        shiftViewModel.validateShift(
             workplaceId: selectedWorkplaceId,
             date: selectedDate,
             startTime: startTime,
             endTime: endTime
         )
-        return validation == nil
+    }
+    
+    private var isFormValid: Bool {
+        errorMessage == nil
+    }
+    
+    private var hasChanges: Bool {
+        let trimmedMemo = memo.trimmingCharacters(in: .whitespacesAndNewlines)
+        return selectedWorkplaceId != shift.workplaceId ||
+                !Calendar.current.isDate(selectedDate, equalTo: shift.date, toGranularity: .day) ||
+                !Calendar.current.isDate(startTime, equalTo: shift.startTime, toGranularity: .minute) ||
+                !Calendar.current.isDate(endTime, equalTo: shift.endTime, toGranularity: .minute) ||
+                breakMinutes != shift.breakMinutes ||
+                (trimmedMemo.isEmpty ? nil : trimmedMemo) != shift.memo ||
+                isConfirmed != shift.isConfirmed
     }
     
     var body: some View {
-        NavigationView {
-            Form {
+        VStack(spacing: 0) {
+                // Custom navigation bar
+                HStack {
+                    Button {
+                        dismiss()
+                        onDismiss()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .medium))
+                            Text("カレンダー")
+                        }
+                    }
+                    .foregroundColor(.blue)
+                    
+                    Spacer()
+                    
+                    Text("シフト編集")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    Spacer()
+                    
+                    Button("保存") {
+                        saveShift()
+                    }
+                    .foregroundColor(.blue)
+                    .disabled(!isFormValid || !hasChanges)
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                
+                Form {
                 Section("基本情報") {
                     // 職場選択
                     Picker("職場", selection: $selectedWorkplaceId) {
@@ -62,32 +115,20 @@ struct EditShiftView: View {
                         }
                     }
                     .pickerStyle(MenuPickerStyle())
-                    .onChange(of: selectedWorkplaceId) { _ in
-                        checkForChanges()
-                        checkOverlaps()
-                    }
                     
                     // 日付選択
                     DatePicker("日付", selection: $selectedDate, displayedComponents: .date)
                         .onChange(of: selectedDate) { newDate in
-                            updateStartEndTime(for: newDate)
-                            checkForChanges()
-                            checkOverlaps()
+                            DispatchQueue.main.async {
+                                updateStartEndTime(for: newDate)
+                            }
                         }
                     
                     // 開始時間
                     DatePicker("開始時間", selection: $startTime, displayedComponents: .hourAndMinute)
-                        .onChange(of: startTime) { _ in
-                            checkForChanges()
-                            checkOverlaps()
-                        }
                     
                     // 終了時間
                     DatePicker("終了時間", selection: $endTime, displayedComponents: .hourAndMinute)
-                        .onChange(of: endTime) { _ in
-                            checkForChanges()
-                            checkOverlaps()
-                        }
                     
                     // 休憩時間
                     HStack {
@@ -99,9 +140,6 @@ struct EditShiftView: View {
                             }
                         }
                         .pickerStyle(MenuPickerStyle())
-                        .onChange(of: breakMinutes) { _ in
-                            checkForChanges()
-                        }
                     }
                 }
                 
@@ -110,15 +148,9 @@ struct EditShiftView: View {
                         Text("メモ（任意）")
                         TextField("例: 朝番、レジ担当など", text: $memo, axis: .vertical)
                             .lineLimit(2...4)
-                            .onChange(of: memo) { _ in
-                                checkForChanges()
-                            }
                     }
                     
                     Toggle("シフト確定", isOn: $isConfirmed)
-                        .onChange(of: isConfirmed) { _ in
-                            checkForChanges()
-                        }
                 }
                 
                 // 繰り返しシフト情報（読み取り専用）
@@ -230,38 +262,9 @@ struct EditShiftView: View {
                             .font(.caption)
                     }
                 }
-            }
-            .navigationTitle("シフト編集")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
-                        dismiss()
-                        onDismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
-                        saveShift()
-                    }
-                    .disabled(!isFormValid || !hasChanges)
                 }
             }
-            .onAppear {
-                checkOverlaps()
-                updateErrorMessage()
-            }
-            .onChange(of: selectedWorkplaceId) { _ in
-                updateErrorMessage()
-            }
-            .onChange(of: startTime) { _ in
-                updateErrorMessage()
-            }
-            .onChange(of: endTime) { _ in
-                updateErrorMessage()
-            }
-        }
+        
     }
     
     private var isNightShift: Bool {
@@ -300,17 +303,6 @@ struct EditShiftView: View {
         Int(currentWorkplace?.transportationAllowance ?? 0)
     }
     
-    private func checkForChanges() {
-        let trimmedMemo = memo.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        hasChanges = selectedWorkplaceId != shift.workplaceId ||
-                    !Calendar.current.isDate(selectedDate, inSameDayAs: shift.date) ||
-                    !Calendar.current.isDate(startTime, equalTo: shift.startTime, toGranularity: .minute) ||
-                    !Calendar.current.isDate(endTime, equalTo: shift.endTime, toGranularity: .minute) ||
-                    breakMinutes != shift.breakMinutes ||
-                    (trimmedMemo.isEmpty ? nil : trimmedMemo) != shift.memo ||
-                    isConfirmed != shift.isConfirmed
-    }
     
     private func updateStartEndTime(for date: Date) {
         let calendar = Calendar.current
@@ -325,25 +317,6 @@ struct EditShiftView: View {
                               second: 0, of: date) ?? date
     }
     
-    private func checkOverlaps() {
-        overlapWarnings = shiftViewModel.wouldOverlap(
-            workplaceId: selectedWorkplaceId,
-            date: selectedDate,
-            startTime: startTime,
-            endTime: endTime,
-            workplaces: workplaces,
-            excluding: shift.id
-        )
-    }
-    
-    private func updateErrorMessage() {
-        errorMessage = shiftViewModel.validateShift(
-            workplaceId: selectedWorkplaceId,
-            date: selectedDate,
-            startTime: startTime,
-            endTime: endTime
-        )
-    }
     
     private func saveShift() {
         var updatedShift = shift

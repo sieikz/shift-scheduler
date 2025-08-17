@@ -25,26 +25,28 @@ struct ContentView: View {
                     }
                     .tag(0)
                 
-                GeometryReader { geometry in
-                    VStack(spacing: 0) {
-                        CalendarView()
-                            .environmentObject(sharedAppState)
-                            .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.65) // カレンダーの高さを65%に拡大
-                        
-                        // 常時表示のシフト情報エリア - 残りのスペースを使用
-                        if selectedTab == 1 {
-                            ShiftInfoDisplay(
-                                selectedDate: sharedAppState.selectedDate,
-                                shifts: sharedAppState.selectedDateShifts,
-                                workplaces: workplaceViewModel.workplaces,
-                                onTodayTapped: {
-                                    let today = Date()
-                                    let todayShifts = shiftViewModel.shifts(for: today)
-                                    sharedAppState.updateSelectedDate(today, shifts: todayShifts)
-                                }
-                            )
-                            .frame(height: geometry.size.height * 0.35) // シフト情報を画面の35%に調整
-                            .background(Color(.systemGroupedBackground))
+                NavigationView {
+                    GeometryReader { geometry in
+                        VStack(spacing: 0) {
+                            CalendarView()
+                                .environmentObject(sharedAppState)
+                                .frame(maxWidth: .infinity, maxHeight: geometry.size.height * 0.65) // カレンダーの高さを65%に拡大
+                            
+                            // 常時表示のシフト情報エリア - 残りのスペースを使用
+                            if selectedTab == 1 {
+                                ShiftInfoDisplay(
+                                    selectedDate: sharedAppState.selectedDate,
+                                    shifts: sharedAppState.selectedDateShifts,
+                                    workplaces: workplaceViewModel.workplaces,
+                                    onTodayTapped: {
+                                        let today = Date()
+                                        let todayShifts = shiftViewModel.shifts(for: today)
+                                        sharedAppState.updateSelectedDate(today, shifts: todayShifts)
+                                    }
+                                )
+                                .frame(height: geometry.size.height * 0.35) // シフト情報を画面の35%に調整
+                                .background(Color(.systemGroupedBackground))
+                            }
                         }
                     }
                 }

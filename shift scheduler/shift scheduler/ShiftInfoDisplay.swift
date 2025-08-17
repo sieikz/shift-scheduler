@@ -8,6 +8,8 @@ struct ShiftInfoDisplay: View {
     @StateObject private var shiftViewModel = ShiftViewModel()
     @StateObject private var workplaceViewModel = WorkplaceViewModel()
     @State private var showingAddShift = false
+    @State private var showingDeleteAlert = false
+    @State private var shiftToDelete: Shift?
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .light)
     
     private var dateString: String {
@@ -121,7 +123,13 @@ struct ShiftInfoDisplay: View {
                             ShiftDetailCard(
                                 shift: shift,
                                 workplaceName: workplaceName(for: shift),
-                                workplaceColor: workplaceColor(for: shift)
+                                workplaceColor: workplaceColor(for: shift),
+                                workplaces: workplaces,
+                                shiftViewModel: shiftViewModel,
+                                onDelete: {
+                                    shiftToDelete = shift
+                                    showingDeleteAlert = true
+                                }
                             )
                         }
                     }
@@ -143,6 +151,21 @@ struct ShiftInfoDisplay: View {
                 )
             }
         }
+        .alert("シフト削除", isPresented: $showingDeleteAlert) {
+            Button("削除", role: .destructive) {
+                if let shift = shiftToDelete {
+                    shiftViewModel.deleteShift(shift)
+                    shiftToDelete = nil
+                }
+            }
+            Button("キャンセル", role: .cancel) {
+                shiftToDelete = nil
+            }
+        } message: {
+            if let shift = shiftToDelete {
+                Text("\(workplaceName(for: shift))のシフトを削除しますか？")
+            }
+        }
     }
 }
 
@@ -150,6 +173,11 @@ struct ShiftDetailCard: View {
     let shift: Shift
     let workplaceName: String
     let workplaceColor: Color
+    let workplaces: [Workplace]
+    let shiftViewModel: ShiftViewModel
+    let onDelete: () -> Void
+    
+    @State private var showingEditSheet = false
     
     private var timeString: String {
         let formatter = DateFormatter()
@@ -198,22 +226,55 @@ struct ShiftDetailCard: View {
                 
                 Spacer()
                 
-                if shift.isNightShift {
-                    HStack(spacing: 4) {
-                        Image(systemName: "moon.fill")
-                            .font(.caption)
-                            .foregroundColor(.indigo)
-                        Text("深夜")
+                HStack(spacing: 8) {
+                    if shift.isNightShift {
+                        HStack(spacing: 4) {
+                            Image(systemName: "moon.fill")
+                                .font(.caption)
+                                .foregroundColor(.indigo)
+                            Text("深夜")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.indigo)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(Color.indigo.opacity(0.1))
+                        )
+                    }
+                    
+                    
+                    // Edit button
+                    Button {
+                        showingEditSheet = true
+                    } label: {
+                        Image(systemName: "pencil")
                             .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(.indigo)
+                            .foregroundColor(.blue)
+                            .frame(width: 28, height: 28)
+                            .background(
+                                Circle()
+                                    .fill(Color.blue.opacity(0.1))
+                            )
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(Color.indigo.opacity(0.1))
-                    )
+                    
+                    // Delete button
+                    Button {
+                        onDelete()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.red)
+                            .frame(width: 28, height: 28)
+                            .background(
+                                Circle()
+                                    .fill(Color.red.opacity(0.1))
+                            )
+                    }
                 }
             }
             
@@ -287,6 +348,15 @@ struct ShiftDetailCard: View {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
         )
+        .sheet(isPresented: $showingEditSheet) {
+            EditShiftView(
+                shift: shift,
+                workplaces: workplaces,
+                shiftViewModel: shiftViewModel
+            ) {
+                // onDismiss
+            }
+        }
     }
 }
 

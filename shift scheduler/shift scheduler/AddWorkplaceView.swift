@@ -190,7 +190,9 @@ struct AddWorkplaceView: View {
                 }
             }
             .onAppear {
-                selectedColor = workplaceViewModel.nextAvailableColor()
+                DispatchQueue.main.async {
+                    selectedColor = workplaceViewModel.nextAvailableColor()
+                }
             }
             .onChange(of: name) {
                 Task { @MainActor in

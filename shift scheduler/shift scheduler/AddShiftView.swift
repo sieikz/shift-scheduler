@@ -65,20 +65,26 @@ struct AddShiftView: View {
                     // 日付選択
                     DatePicker("日付", selection: $selectedDate, displayedComponents: .date)
                         .onChange(of: selectedDate) { newDate in
-                            updateStartEndTime(for: newDate)
-                            checkOverlaps()
+                            DispatchQueue.main.async {
+                                updateStartEndTime(for: newDate)
+                                checkOverlaps()
+                            }
                         }
                     
                     // 開始時間
                     DatePicker("開始時間", selection: $startTime, displayedComponents: .hourAndMinute)
                         .onChange(of: startTime) { _ in
-                            checkOverlaps()
+                            DispatchQueue.main.async {
+                                checkOverlaps()
+                            }
                         }
                     
                     // 終了時間
                     DatePicker("終了時間", selection: $endTime, displayedComponents: .hourAndMinute)
                         .onChange(of: endTime) { _ in
-                            checkOverlaps()
+                            DispatchQueue.main.async {
+                                checkOverlaps()
+                            }
                         }
                     
                     // 休憩時間
@@ -209,14 +215,18 @@ struct AddShiftView: View {
                 }
             }
             .onChange(of: selectedWorkplaceId) { _ in
-                checkOverlaps()
-                updateErrorMessage()
+                DispatchQueue.main.async {
+                    checkOverlaps()
+                    updateErrorMessage()
+                }
             }
             .onAppear {
-                if let firstWorkplace = workplaces.first {
-                    selectedWorkplaceId = firstWorkplace.id
+                DispatchQueue.main.async {
+                    if let firstWorkplace = workplaces.first {
+                        selectedWorkplaceId = firstWorkplace.id
+                    }
+                    updateErrorMessage()
                 }
-                updateErrorMessage()
             }
         }
     }

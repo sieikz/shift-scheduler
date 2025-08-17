@@ -33,7 +33,9 @@ struct SettingsView: View {
             .navigationTitle("設定")
         }
         .onAppear {
-            loadSettings()
+            DispatchQueue.main.async {
+                loadSettings()
+            }
         }
         .sheet(isPresented: $showingAbout) {
             AboutView()
@@ -49,12 +51,14 @@ struct SettingsView: View {
                 
                 Toggle("通知を有効にする", isOn: $notificationsEnabled)
                     .onChange(of: notificationsEnabled) { enabled in
-                        if enabled {
-                            requestNotificationPermission()
-                        } else {
-                            notificationManager.disableNotifications()
+                        DispatchQueue.main.async {
+                            if enabled {
+                                requestNotificationPermission()
+                            } else {
+                                notificationManager.disableNotifications()
+                            }
+                            saveSettings()
                         }
-                        saveSettings()
                     }
             }
             
@@ -78,8 +82,10 @@ struct SettingsView: View {
                     }
                     .pickerStyle(MenuPickerStyle())
                     .onChange(of: reminderHoursBefore) { _ in
-                        refreshNotifications()
-                        saveSettings()
+                        DispatchQueue.main.async {
+                            refreshNotifications()
+                            saveSettings()
+                        }
                     }
                 }
                 
@@ -91,16 +97,20 @@ struct SettingsView: View {
                         
                         Toggle("1時間前にも通知", isOn: $oneHourReminderEnabled)
                             .onChange(of: oneHourReminderEnabled) { _ in
-                                refreshNotifications()
-                                saveSettings()
+                                DispatchQueue.main.async {
+                                    refreshNotifications()
+                                    saveSettings()
+                                }
                             }
                     }
                 }
                 
                 DatePicker("デイリー通知時刻", selection: $dailyReminderTime, displayedComponents: .hourAndMinute)
                     .onChange(of: dailyReminderTime) { _ in
-                        scheduleDailyReminder()
-                        saveSettings()
+                        DispatchQueue.main.async {
+                            scheduleDailyReminder()
+                            saveSettings()
+                        }
                     }
             }
         } header: {
@@ -123,7 +133,9 @@ struct SettingsView: View {
                 
                 Toggle("ダークモード", isOn: $isDarkModeEnabled)
                     .onChange(of: isDarkModeEnabled) { _ in
-                        saveSettings()
+                        DispatchQueue.main.async {
+                            saveSettings()
+                        }
                     }
             }
             
@@ -134,7 +146,9 @@ struct SettingsView: View {
                 
                 Toggle("週番号を表示", isOn: $showWeekNumbers)
                     .onChange(of: showWeekNumbers) { _ in
-                        saveSettings()
+                        DispatchQueue.main.async {
+                            saveSettings()
+                        }
                     }
             }
             
@@ -145,7 +159,9 @@ struct SettingsView: View {
                 
                 Toggle("日曜日始まり", isOn: $startWeekOnSunday)
                     .onChange(of: startWeekOnSunday) { _ in
-                        saveSettings()
+                        DispatchQueue.main.async {
+                            saveSettings()
+                        }
                     }
             }
         } header: {

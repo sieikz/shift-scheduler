@@ -40,7 +40,9 @@ struct StatisticsView: View {
             .navigationTitle("")
         }
         .onChange(of: selectedTimeRange) {
-            updateStats()
+            DispatchQueue.main.async {
+                updateStats()
+            }
         }
     }
     
@@ -332,10 +334,16 @@ struct StatisticsView: View {
             }
         }
         
-        let busiestWeekday = weekdayShifts.max { $0.value < $1.value }?.key ?? 1
+        // 最も多いシフト数を取得
+        let maxShifts = weekdayShifts.values.max() ?? 0
+        // 最も多いシフト数と同じ数のシフトがある曜日をすべて取得
+        let busiestWeekdays = weekdayShifts.compactMap { maxShifts > 0 && $0.value == maxShifts ? $0.key : nil }.sorted()
+        
         let weekdayFormatter = DateFormatter()
         weekdayFormatter.locale = Locale(identifier: "ja_JP")
         let weekdayNames = weekdayFormatter.weekdaySymbols!
+        
+        let busiestWeekdayNames = busiestWeekdays.map { weekdayNames[$0 - 1] }
         
         let daysDifference = calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 1
         let averageHoursPerDay = selectedRangeStats.totalWorkingHours / Double(max(1, daysDifference))
@@ -343,8 +351,10 @@ struct StatisticsView: View {
         let nightShiftRate = Double(nightShifts) / Double(shifts.count) * 100
         let holidayWorkRate = Double(holidayShifts) / Double(shifts.count) * 100
         
+        let busiestWeekdayString = busiestWeekdayNames.isEmpty ? "データなし" : busiestWeekdayNames.joined(separator: "・")
+        
         return WorkPattern(
-            busiestWeekday: weekdayNames[busiestWeekday - 1],
+            busiestWeekday: busiestWeekdayString,
             averageHoursPerDay: averageHoursPerDay,
             nightShiftRate: nightShiftRate,
             holidayWorkRate: holidayWorkRate
