@@ -64,43 +64,56 @@ struct EditWorkplaceView: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
-                        LazyHGrid(rows: [GridItem(.fixed(40))], spacing: 12) {
-                            ForEach(Workplace.colorOptions.indices, id: \.self) { index in
-                                let color = Workplace.colorOptions[index]
-                                let isSelected = selectedColor.toHex() == color.toHex()
-                                let isAvailable = workplaceViewModel.isColorAvailable(color, excluding: workplace.id)
-                                
-                                Button {
-                                    if isAvailable {
-                                        selectedColor = color
-                                    }
-                                } label: {
-                                    Circle()
-                                        .fill(color)
-                                        .frame(width: 36, height: 36)
-                                        .overlay(
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(Workplace.colorOptions.indices, id: \.self) { index in
+                                    let color = Workplace.colorOptions[index]
+                                    let isSelected = selectedColor.toHex() == color.toHex()
+                                    let isAvailable = workplaceViewModel.isColorAvailable(color, excluding: workplace.id)
+                                    
+                                    Button {
+                                        if isAvailable {
+                                            selectedColor = color
+                                        }
+                                    } label: {
+                                        ZStack {
                                             Circle()
-                                                .stroke(isSelected ? Color.primary : Color.clear, lineWidth: 3)
-                                        )
-                                        .overlay(
-                                            Group {
-                                                if isSelected {
-                                                    Image(systemName: "checkmark")
-                                                        .foregroundColor(.white)
-                                                        .font(.system(size: 14, weight: .bold))
-                                                } else if !isAvailable {
-                                                    Image(systemName: "xmark")
-                                                        .foregroundColor(.white.opacity(0.7))
-                                                        .font(.system(size: 12, weight: .bold))
-                                                }
+                                                .fill(color)
+                                                .frame(width: 36, height: 36)
+                                            
+                                            if isSelected {
+                                                Circle()
+                                                    .fill(.ultraThinMaterial)
+                                                    .frame(width: 36, height: 36)
+                                                
+                                                Circle()
+                                                    .fill(Color.white)
+                                                    .frame(width: 16, height: 16)
+                                                    .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 0.5)
+                                            } else if !isAvailable {
+                                                Circle()
+                                                    .fill(.ultraThinMaterial)
+                                                    .frame(width: 36, height: 36)
+                                                
+                                                Image(systemName: "xmark")
+                                                    .foregroundColor(.white.opacity(0.8))
+                                                    .font(.system(size: 12, weight: .medium))
                                             }
-                                        )
-                                        .opacity(isAvailable ? 1.0 : 0.4)
-                                        .scaleEffect(isSelected ? 1.1 : 1.0)
-                                        .animation(.easeInOut(duration: 0.15), value: isSelected)
+                                            
+                                            if isSelected {
+                                                Circle()
+                                                    .stroke(Color.primary, lineWidth: 2)
+                                                    .frame(width: 40, height: 40)
+                                            }
+                                        }
+                                        .opacity(isAvailable ? 1.0 : 0.5)
+                                        .scaleEffect(isSelected ? 1.0 : 0.95)
+                                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+                                    }
+                                    .disabled(!isAvailable)
                                 }
-                                .disabled(!isAvailable)
                             }
+                            .padding(.horizontal, 1)
                         }
                     }
                     

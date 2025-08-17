@@ -3,8 +3,6 @@ import SwiftUI
 struct WorkplaceListView: View {
     @StateObject private var workplaceViewModel = WorkplaceViewModel()
     @State private var showingAddWorkplace = false
-    @State private var showingEditWorkplace = false
-    @State private var selectedWorkplace: Workplace?
     @State private var showingDeleteAlert = false
     @State private var workplaceToDelete: Workplace?
     
@@ -43,9 +41,8 @@ struct WorkplaceListView: View {
                 } else {
                     List {
                         ForEach(workplaceViewModel.workplaces) { workplace in
-                            WorkplaceRowView(workplace: workplace) {
-                                selectedWorkplace = workplace
-                                showingEditWorkplace = true
+                            NavigationLink(destination: EditWorkplaceView(workplace: workplace, workplaceViewModel: workplaceViewModel) {}) {
+                                WorkplaceRowContentView(workplace: workplace)
                             }
                         }
                         .onDelete(perform: deleteWorkplaces)
@@ -77,15 +74,6 @@ struct WorkplaceListView: View {
             .sheet(isPresented: $showingAddWorkplace) {
                 NavigationView {
                     AddWorkplaceView(workplaceViewModel: workplaceViewModel)
-                }
-            }
-            .sheet(isPresented: $showingEditWorkplace) {
-                if let workplace = selectedWorkplace {
-                    NavigationView {
-                        EditWorkplaceView(workplace: workplace, workplaceViewModel: workplaceViewModel) {
-                            selectedWorkplace = nil
-                        }
-                    }
                 }
             }
             .alert("職場を削除", isPresented: $showingDeleteAlert) {
@@ -123,71 +111,67 @@ struct WorkplaceListView: View {
     }
 }
 
-// 職場行のビュー
-struct WorkplaceRowView: View {
+// 職場行のコンテンツビュー
+struct WorkplaceRowContentView: View {
     let workplace: Workplace
-    let onTap: () -> Void
     
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 16) {
-                Circle()
-                    .fill(workplace.color)
-                    .frame(width: 24, height: 24)
-                    .shadow(color: workplace.color.opacity(0.3), radius: 2)
+        HStack(spacing: 16) {
+            Circle()
+                .fill(workplace.color)
+                .frame(width: 24, height: 24)
+                .shadow(color: workplace.color.opacity(0.3), radius: 2)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text(workplace.name)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(workplace.name)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
+                HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "yensign.circle")
+                        Text("¥\(Int(workplace.hourlyWage))")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
                     
-                    HStack(spacing: 12) {
+                    if workplace.transportationAllowance > 0 {
                         HStack(spacing: 4) {
-                            Image(systemName: "yensign.circle")
-                            Text("¥\(Int(workplace.hourlyWage))")
+                            Image(systemName: "tram")
+                            Text("¥\(Int(workplace.transportationAllowance))")
                         }
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                        
-                        if workplace.transportationAllowance > 0 {
-                            HStack(spacing: 4) {
-                                Image(systemName: "tram")
-                                Text("¥\(Int(workplace.transportationAllowance))")
-                            }
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    if let address = workplace.address, !address.isEmpty {
-                        Text(address)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
                     }
                 }
                 
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    if workplace.travelTimeMinutes > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "car.fill")
-                            Text("\(workplace.travelTimeMinutes)分")
-                        }
+                if let address = workplace.address, !address.isEmpty {
+                    Text(address)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    }
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                        .lineLimit(1)
                 }
             }
-            .padding(.vertical, 8)
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 4) {
+                if workplace.travelTimeMinutes > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "car.fill")
+                        Text("\(workplace.travelTimeMinutes)分")
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 8)
     }
 }
 
