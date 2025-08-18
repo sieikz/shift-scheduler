@@ -10,11 +10,13 @@ import SwiftUI
 @main
 struct shift_schedulerApp: App {
     let persistenceController = PersistenceController.shared
+    @AppStorage("isDarkModeEnabled") private var isDarkModeEnabled = false
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .preferredColorScheme(isDarkModeEnabled ? .dark : .light)
         }
     }
 }

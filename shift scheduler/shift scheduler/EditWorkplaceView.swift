@@ -196,7 +196,7 @@ struct EditWorkplaceView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button("戻る") {
                         dismiss()
                         onDismiss()
                     }

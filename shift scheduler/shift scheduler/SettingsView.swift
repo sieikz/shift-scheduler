@@ -13,7 +13,7 @@ struct SettingsView: View {
     @State private var dailyReminderTime = Date()
     
     // 表示設定
-    @State private var isDarkModeEnabled = true
+    @AppStorage("isDarkModeEnabled") private var isDarkModeEnabled = false
     @State private var showWeekNumbers = false
     @State private var startWeekOnSunday = true
     
@@ -132,11 +132,6 @@ struct SettingsView: View {
                     .frame(width: 24)
                 
                 Toggle("ダークモード", isOn: $isDarkModeEnabled)
-                    .onChange(of: isDarkModeEnabled) { _ in
-                        DispatchQueue.main.async {
-                            saveSettings()
-                        }
-                    }
             }
             
             HStack {
@@ -227,7 +222,6 @@ struct SettingsView: View {
             dailyReminderTime = calendar.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
         }
         
-        isDarkModeEnabled = defaults.bool(forKey: "isDarkModeEnabled")
         showWeekNumbers = defaults.bool(forKey: "showWeekNumbers")
         startWeekOnSunday = defaults.bool(forKey: "startWeekOnSunday")
         
@@ -244,7 +238,6 @@ struct SettingsView: View {
             defaults.set(timeData, forKey: "dailyReminderTime")
         }
         
-        defaults.set(isDarkModeEnabled, forKey: "isDarkModeEnabled")
         defaults.set(showWeekNumbers, forKey: "showWeekNumbers")
         defaults.set(startWeekOnSunday, forKey: "startWeekOnSunday")
         
