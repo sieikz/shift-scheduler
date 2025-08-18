@@ -10,6 +10,7 @@ struct CalendarView: View {
     @State private var selectedDateShifts: [Shift] = []
     @State private var currentMonthOffset: CGFloat = 0
     @State private var dragOffset: CGFloat = 0
+    @AppStorage("startWeekOnSunday") private var startWeekOnSunday = true
     
     private let calendar = Calendar.current
     private let hapticFeedback = UIImpactFeedbackGenerator(style: .light)
@@ -139,7 +140,15 @@ struct CalendarView: View {
     private var weekdayHeaders: [String] {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
-        return formatter.shortWeekdaySymbols
+        var weekdays = formatter.shortWeekdaySymbols!
+        
+        if !startWeekOnSunday {
+            // 月曜日始まりにする（日曜日を最後に移動）
+            let sunday = weekdays.removeFirst()
+            weekdays.append(sunday)
+        }
+        
+        return weekdays
     }
     
     private var calendarDays: [Date?] {
@@ -148,7 +157,12 @@ struct CalendarView: View {
         }
         
         let firstOfMonth = monthInterval.start
-        let firstWeekday = calendar.component(.weekday, from: firstOfMonth)
+        var firstWeekday = calendar.component(.weekday, from: firstOfMonth)
+        
+        // 月曜日始まりの場合、曜日のインデックスを調整
+        if !startWeekOnSunday {
+            firstWeekday = firstWeekday == 1 ? 7 : firstWeekday - 1
+        }
         
         // Add empty cells for days before the first day of the month
         var days: [Date?] = Array(repeating: nil, count: firstWeekday - 1)

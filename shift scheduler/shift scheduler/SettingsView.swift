@@ -14,8 +14,7 @@ struct SettingsView: View {
     
     // 表示設定
     @AppStorage("isDarkModeEnabled") private var isDarkModeEnabled = false
-    @State private var showWeekNumbers = false
-    @State private var startWeekOnSunday = true
+    @AppStorage("startWeekOnSunday") private var startWeekOnSunday = true
     
     
     var body: some View {
@@ -29,6 +28,7 @@ struct SettingsView: View {
                 
                 // アプリ情報
                 appInfoSection
+                
             }
             .navigationTitle("設定")
         }
@@ -135,29 +135,11 @@ struct SettingsView: View {
             }
             
             HStack {
-                Image(systemName: "calendar")
-                    .foregroundColor(.blue)
-                    .frame(width: 24)
-                
-                Toggle("週番号を表示", isOn: $showWeekNumbers)
-                    .onChange(of: showWeekNumbers) { _ in
-                        DispatchQueue.main.async {
-                            saveSettings()
-                        }
-                    }
-            }
-            
-            HStack {
                 Image(systemName: "calendar.day.timeline.leading")
                     .foregroundColor(.green)
                     .frame(width: 24)
                 
                 Toggle("日曜日始まり", isOn: $startWeekOnSunday)
-                    .onChange(of: startWeekOnSunday) { _ in
-                        DispatchQueue.main.async {
-                            saveSettings()
-                        }
-                    }
             }
         } header: {
             Text("表示設定")
@@ -206,6 +188,7 @@ struct SettingsView: View {
         }
     }
     
+    
     private func loadSettings() {
         let defaults = UserDefaults.standard
         
@@ -222,8 +205,6 @@ struct SettingsView: View {
             dailyReminderTime = calendar.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
         }
         
-        showWeekNumbers = defaults.bool(forKey: "showWeekNumbers")
-        startWeekOnSunday = defaults.bool(forKey: "startWeekOnSunday")
         
     }
     
@@ -238,8 +219,6 @@ struct SettingsView: View {
             defaults.set(timeData, forKey: "dailyReminderTime")
         }
         
-        defaults.set(showWeekNumbers, forKey: "showWeekNumbers")
-        defaults.set(startWeekOnSunday, forKey: "startWeekOnSunday")
         
     }
     
@@ -268,12 +247,43 @@ struct SettingsView: View {
         }
     }
     
+    private func loadTermsOfService() -> String {
+        guard let path = Bundle.main.path(forResource: "TermsOfService", ofType: "md"),
+              let content = try? String(contentsOfFile: path) else {
+            return """
+            利用規約ファイルが見つかりませんでした。
+            
+            本アプリの利用に関する詳細な規約については、
+            開発者までお問い合わせください。
+            """
+        }
+        return content
+    }
+    
+    private func loadPrivacyPolicy() -> String {
+        guard let path = Bundle.main.path(forResource: "PrivacyPolicy", ofType: "md"),
+              let content = try? String(contentsOfFile: path) else {
+            return """
+            プライバシーポリシーファイルが見つかりませんでした。
+            
+            本アプリのプライバシーに関する詳細な方針については、
+            開発者までお問い合わせください。
+            
+            なお、本アプリはすべてのデータを端末内に保存し、
+            外部サーバーへの送信は一切行いません。
+            """
+        }
+        return content
+    }
+    
 }
 
 
 // アプリ情報ビュー
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showingTermsOfService = false
+    @State private var showingPrivacyPolicy = false
     
     var body: some View {
         NavigationView {
@@ -318,12 +328,12 @@ struct AboutView: View {
                     // 利用規約・プライバシーポリシー
                     VStack(spacing: 16) {
                         Button("利用規約") {
-                            // 利用規約を表示
+                            showingTermsOfService = true
                         }
                         .foregroundColor(.blue)
                         
                         Button("プライバシーポリシー") {
-                            // プライバシーポリシーを表示
+                            showingPrivacyPolicy = true
                         }
                         .foregroundColor(.blue)
                     }
@@ -346,6 +356,41 @@ struct AboutView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingTermsOfService) {
+            DocumentView(title: "利用規約", content: loadTermsOfService())
+        }
+        .sheet(isPresented: $showingPrivacyPolicy) {
+            DocumentView(title: "プライバシーポリシー", content: loadPrivacyPolicy())
+        }
+    }
+    
+    private func loadTermsOfService() -> String {
+        guard let path = Bundle.main.path(forResource: "TermsOfService", ofType: "md"),
+              let content = try? String(contentsOfFile: path) else {
+            return """
+            利用規約ファイルが見つかりませんでした。
+            
+            本アプリの利用に関する詳細な規約については、
+            開発者までお問い合わせください。
+            """
+        }
+        return content
+    }
+    
+    private func loadPrivacyPolicy() -> String {
+        guard let path = Bundle.main.path(forResource: "PrivacyPolicy", ofType: "md"),
+              let content = try? String(contentsOfFile: path) else {
+            return """
+            プライバシーポリシーファイルが見つかりませんでした。
+            
+            本アプリのプライバシーに関する詳細な方針については、
+            開発者までお問い合わせください。
+            
+            なお、本アプリはすべてのデータを端末内に保存し、
+            外部サーバーへの送信は一切行いません。
+            """
+        }
+        return content
     }
 }
 
